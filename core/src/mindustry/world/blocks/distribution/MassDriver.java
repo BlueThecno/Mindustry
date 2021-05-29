@@ -16,6 +16,7 @@ import mindustry.gen.*;
 import mindustry.graphics.*;
 import mindustry.type.*;
 import mindustry.world.*;
+import mindustry.world.meta.*;
 
 import static mindustry.Vars.*;
 
@@ -51,12 +52,22 @@ public class MassDriver extends Block{
     }
 
     @Override
+    public void setStats(){
+        super.setStats();
+
+        stats.add(Stat.shootRange, range / tilesize, StatUnit.blocks);
+        stats.add(Stat.reload, 60f / reloadTime, StatUnit.none);
+    }
+
+    @Override
     public TextureRegion[] icons(){
         return new TextureRegion[]{baseRegion, region};
     }
 
     @Override
     public void drawPlace(int x, int y, int rotation, boolean valid){
+        super.drawPlace(x, y, rotation, valid);
+
         Drawf.dashCircle(x * tilesize, y * tilesize, range, Pal.accent);
 
         //check if a mass driver is selected while placing this driver
@@ -317,6 +328,7 @@ public class MassDriver extends Block{
 
         @Override
         public Point2 config(){
+            if(tile == null) return null;
             return Point2.unpack(link).sub(tile.x, tile.y);
         }
 

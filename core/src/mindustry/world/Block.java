@@ -26,6 +26,7 @@ import mindustry.graphics.MultiPacker.*;
 import mindustry.type.*;
 import mindustry.ui.*;
 import mindustry.world.blocks.environment.*;
+import mindustry.world.blocks.power.*;
 import mindustry.world.consumers.*;
 import mindustry.world.meta.*;
 import mindustry.world.meta.values.*;
@@ -61,6 +62,8 @@ public class Block extends UnlockableContent{
     public @Nullable Object lastConfig;
     /** whether to save the last config and apply it to newly placed blocks */
     public boolean saveConfig = false;
+    /** whether to allow copying the config through middle click */
+    public boolean copyConfig = true;
     /** whether this block has a tile entity that updates */
     public boolean update;
     /** whether this block has health and can be destroyed */
@@ -121,6 +124,8 @@ public class Block extends UnlockableContent{
     public boolean fillsTile = true;
     /** whether this block can be replaced in all cases */
     public boolean alwaysReplace = false;
+    /** if false, this block can never be replaced. */
+    public boolean replaceable = true;
     /** The block group. Unless {@link #canReplace} is overriden, blocks in the same group can replace each other. */
     public BlockGroup group = BlockGroup.none;
     /** List of block flags. Used for AI indexing. */
@@ -159,8 +164,10 @@ public class Block extends UnlockableContent{
     public boolean canOverdrive = true;
     /** Outlined icon color.*/
     public Color outlineColor = Color.valueOf("404049");
-    /** Whether the icon region has an outline added. */
+    /** Whether any icon region has an outline added. */
     public boolean outlineIcon = false;
+    /** Which of the icon regions gets the outline added. */
+    public int outlinedIcon = -1;
     /** Whether this block has a shadow under it. */
     public boolean hasShadow = true;
     /** Sounds made when this block breaks.*/
@@ -252,6 +259,22 @@ public class Block extends UnlockableContent{
 
     /** Drawn when you are placing a block. */
     public void drawPlace(int x, int y, int rotation, boolean valid){
+        drawPotentialLinks(x, y);
+    }
+
+    public void drawPotentialLinks(int x, int y){
+        if((consumesPower || outputsPower) && hasPower){
+            Tile tile = world.tile(x, y);
+            if(tile != null){
+                PowerNode.getNodeLinks(tile, this, player.team(), other -> {
+                    PowerNode node = (PowerNode)other.block;
+                    Draw.color(node.laserColor1, Renderer.laserOpacity * 0.5f);
+                    node.drawLaser(tile.team(), x * tilesize + offset, y * tilesize + offset, other.x, other.y, size, other.block.size);
+
+                    Drawf.square(other.x, other.y, other.block.size * tilesize / 2f + 2f, Pal.place);
+                });
+            }
+        }
     }
 
     public float drawPlaceText(String text, int x, int y, boolean valid){
@@ -332,7 +355,11 @@ public class Block extends UnlockableContent{
         super.setStats();
 
         stats.add(Stat.size, "@x@", size, size);
-        stats.add(Stat.health, health, StatUnit.none);
+
+        if(synthetic()){
+            stats.add(Stat.health, health, StatUnit.none);
+        }
+
         if(canBeBuilt()){
             stats.add(Stat.buildTime, buildCost / 60, StatUnit.seconds);
             stats.add(Stat.buildCost, new ItemListValue(false, requirements));
@@ -382,7 +409,7 @@ public class Block extends UnlockableContent{
 
     public boolean canReplace(Block other){
         if(other.alwaysReplace) return true;
-        return (other != this || rotate) && this.group != BlockGroup.none && other.group == this.group &&
+        return other.replaceable && (other != this || rotate) && this.group != BlockGroup.none && other.group == this.group &&
             (size == other.size || (size >= other.size && ((subclass != null && subclass == other.subclass) || group.anyReplace)));
     }
 
@@ -393,6 +420,11 @@ public class Block extends UnlockableContent{
 
     /** Mutates the given list of points used during line placement. */
     public void changePlacementPath(Seq<Point2> points, int rotation){
+
+    }
+
+    /** Mutates the given list of requests used during line placement. */
+    public void handlePlacementLine(Seq<BuildPlan> plans){
 
     }
 
@@ -555,7 +587,7 @@ public class Block extends UnlockableContent{
     }
 
     public boolean isPlaceable(){
-        return isVisible() && !state.rules.bannedBlocks.contains(this);
+        return isVisible() && (!state.rules.bannedBlocks.contains(this) || state.rules.editor);
     }
 
     /** Called when building of this block begins. */
@@ -590,6 +622,14 @@ public class Block extends UnlockableContent{
 
     public boolean isStatic(){
         return cacheLayer == CacheLayer.walls;
+    }
+
+    public void setupRequirements(Category cat, ItemStack[] stacks){
+        requirements(cat, stacks);
+    }
+
+    public void setupRequirements(Category cat, BuildVisibility visible, ItemStack[] stacks){
+        requirements(cat, visible, stacks);
     }
 
     public void requirements(Category cat, ItemStack[] stacks, boolean unlocked){
@@ -767,7 +807,7 @@ public class Block extends UnlockableContent{
 
         if(outlineIcon){
             final int radius = 4;
-            PixmapRegion region = Core.atlas.getPixmap(getGeneratedIcons()[getGeneratedIcons().length-1]);
+            PixmapRegion region = Core.atlas.getPixmap(getGeneratedIcons()[outlinedIcon >= 0 ? outlinedIcon : getGeneratedIcons().length -1]);
             Pixmap out = new Pixmap(region.width, region.height);
             Color color = new Color();
             for(int x = 0; x < region.width; x++){

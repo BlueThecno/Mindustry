@@ -208,11 +208,11 @@ public class PlanetDialog extends BaseDialog implements PlanetInterfaceRenderer{
     }
 
     void addBack(){
-        buttons.button("@back", Icon.left, this::hide).size(200, 54).pad(2).bottom();
+        buttons.button("@back", Icon.left, this::hide).size(200f, 54f).pad(2).bottom();
     }
 
     void addTech(){
-        buttons.button("@techtree", Icon.tree, () -> ui.research.show()).size(200, 54).pad(2).bottom();
+        buttons.button("@techtree", Icon.tree, () -> ui.research.show()).size(200f, 54f).pad(2).bottom();
     }
 
     public void showOverview(){
@@ -649,8 +649,10 @@ public class PlanetDialog extends BaseDialog implements PlanetInterfaceRenderer{
 
         if(sector == null){
             stable.clear();
+            stable.visible = false;
             return;
         }
+        stable.visible = true;
 
         float x = stable.getX(Align.center), y = stable.getY(Align.center);
         stable.clear();
@@ -677,7 +679,7 @@ public class PlanetDialog extends BaseDialog implements PlanetInterfaceRenderer{
                     setFillParent(true);
                     cont.pane(t -> {
                         t.marginRight(19f);
-                        t.defaults().size(48);
+                        t.defaults().size(48f);
 
                         t.button(Icon.none, Styles.clearTogglei, () -> {
                             sector.info.icon = null;
@@ -701,6 +703,7 @@ public class PlanetDialog extends BaseDialog implements PlanetInterfaceRenderer{
                             if(++i % 8 == 0) t.row();
                         }
                     });
+                    buttons.button("@back", Icon.left, this::hide).size(210f, 64f);
                 }}.show();
             }).size(40f);
         }).row();

@@ -43,8 +43,8 @@ public class UnitType extends UnlockableContent{
     public Prov<? extends Unit> constructor;
     public Prov<? extends UnitController> defaultController = () -> !flying ? new GroundAI() : new FlyingAI();
     public float speed = 1.1f, boostMultiplier = 1f, rotateSpeed = 5f, baseRotateSpeed = 5f;
-    public float drag = 0.3f, accel = 0.5f, landShake = 0f, rippleScale = 1f, fallSpeed = 0.018f;
-    public float health = 200f, range = -1, armor = 0f, maxRange = -1f;
+    public float drag = 0.3f, accel = 0.5f, landShake = 0f, rippleScale = 1f, riseSpeed = 0.08f, fallSpeed = 0.018f;
+    public float health = 200f, range = -1, miningRange = 70f, armor = 0f, maxRange = -1f;
     public float crashDamageMultiplier = 1f;
     public boolean targetAir = true, targetGround = true;
     public boolean faceTarget = true, rotateShooting = true, isCounted = true, lowAltitude = false, circleTarget = false;
@@ -55,6 +55,7 @@ public class UnitType extends UnlockableContent{
     public float aimDst = -1f;
     public float buildBeamOffset = 3.8f;
     public int commandLimit = 8;
+    public float commandRadius = 150f;
     public float visualElevation = -1f;
     public boolean allowLegStep = false;
     public boolean hovering = false;
@@ -144,6 +145,14 @@ public class UnitType extends UnlockableContent{
         return spawn(state.rules.defaultTeam, x, y);
     }
 
+    public Unit spawn(Team team, Position pos){
+        return spawn(team, pos.getX(), pos.getY());
+    }
+
+    public Unit spawn(Position pos){
+        return spawn(state.rules.defaultTeam, pos);
+    }
+
     public boolean hasWeapons(){
         return weapons.size > 0;
     }
@@ -193,7 +202,7 @@ public class UnitType extends UnlockableContent{
 
         if(unit.controller() instanceof LogicAI){
             table.row();
-            table.add(Blocks.microProcessor.emoji() + " " + Core.bundle.get("units.processorcontrol")).growX().left();
+            table.add(Blocks.microProcessor.emoji() + " " + Core.bundle.get("units.processorcontrol")).growX().wrap().left();
             table.row();
             table.label(() -> Iconc.settings + " " + (long)unit.flag + "").color(Color.lightGray).growX().wrap().left();
         }
